@@ -135,5 +135,6 @@ run.enabled = false
 
 // Call this for each Main class you want to expose with an app script
 createScript(project, 'flows.Aggregate', 'aggregate')
+createScript(project, 'flows.Symlinks', 'nf-monitor')
 createScript(project, 'mcli.ComputeESS', 'ess')
 

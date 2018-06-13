@@ -112,7 +112,7 @@ public class Aggregate extends Experiment
 
   private void warnMissing(Path currentFile)
   {
-    System.out.println("Skipping execution; following file was missing: " + currentFile.toString());
+    System.out.println("Skipping one exec folder (often because of missing file): " + currentFile.toString());
   }
 
   private List<File> getExecFolders()
