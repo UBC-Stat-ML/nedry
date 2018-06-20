@@ -56,4 +56,13 @@ dependencies {
   - Deselect ``Copy projects into workspace`` to avoid having duplicates
 
 
+Usage 
+----
+
+To organize results of the last nextflow run: use
+
+```
+./nextflow run MY_WORKFLOW.nf -resume | nf-monitor --open true
+```
+
 
