@@ -16,8 +16,11 @@ import binc.Command
 import static binc.Command.call
 
 class Symlinks {
-  @Arg @DefaultValue("false") 
-  boolean open = false
+  @Arg @DefaultValue("true") 
+  boolean open = true
+  
+  @Arg   @DefaultValue("open")
+  String openCommand = "open"
   
   public static def void main(String [] args) {
     val creator = Creators::conventional
@@ -36,26 +39,29 @@ class Symlinks {
     val allLinks = new File("links") => [mkdir]
     val currentExec = new File(allLinks, Results::nextRandomResultFolderName) => [mkdir]
     if (open) 
-      call(Command::byName("open").withArg(currentExec.absolutePath))
+      try { call(Command::byName(openCommand).withArg(currentExec.absolutePath)) }
+      catch (Exception e) { System.err.println("nf-monitor: Could not get the folder open using command " + openCommand) }
     while (true) {
-      val input = br.readLine();
-      if (input !== null) {
-        println(input)
-        val matches = BriefStrings::allGroupsFromFirstMatch(pattern, input)
-        if (!matches.empty) {
-          val prefix =  matches.get(0)
-          val suffix =  matches.get(1)
-          val processName = matches.get(2)
-          val _index = matches.get(3)
-          val parsedIndex = if (_index === null) 0 else Integer.parseInt(_index.replaceAll(".*\\(", "").replaceAll("\\).*", ""))
-          val _subdir = Paths::get("work", prefix).toFile
-          val workdir = complete(_subdir, suffix)
-          val linkParentFolder = new File(currentExec, processName) => [mkdirs]
-          val link = new File(linkParentFolder, "" + parsedIndex)
-          val relative =  linkParentFolder.toPath.relativize(workdir.toPath)
-          Files::createSymbolicLink(link.toPath, relative) 
-        }
-      } else return
+      try {
+        val input = br.readLine();
+        if (input !== null) {
+          println(input)
+          val matches = BriefStrings::allGroupsFromFirstMatch(pattern, input)
+          if (!matches.empty) {
+            val prefix =  matches.get(0)
+            val suffix =  matches.get(1)
+            val processName = matches.get(2)
+            val _index = matches.get(3)
+            val parsedIndex = if (_index === null) 0 else Integer.parseInt(_index.replaceAll(".*\\(", "").replaceAll("\\).*", ""))
+            val _subdir = Paths::get("work", prefix).toFile
+            val workdir = complete(_subdir, suffix)
+            val linkParentFolder = new File(currentExec, processName) => [mkdirs]
+            val link = new File(linkParentFolder, "" + parsedIndex)
+            val relative =  linkParentFolder.toPath.relativize(workdir.toPath)
+            Files::createSymbolicLink(link.toPath, relative) 
+          }
+        } else return
+      } catch (Exception e) { System.err.println("nf-monitor: " + e) }
     }
   }
   static def File complete(File directory, String prefix) {
