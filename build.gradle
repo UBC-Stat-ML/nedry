@@ -30,9 +30,9 @@ xtend {
 uploadArchives {
   repositories.mavenDeployer {
     repository(url: "file:///${System.properties['user.home']}/artifacts/")
-    pom.version = "1.0.2"
+    pom.version = "2.0.0"
     pom.artifactId = "nedry"
-    pom.groupId = "ca.ubc.stat"
+    pom.groupId = "com.github.UBC-Stat-ML"
   }
 }
 
@@ -45,24 +45,16 @@ eclipse {
 repositories {
   mavenCentral()
   jcenter()
-  maven {
-    url "https://ubc-stat-ml.github.io/artifacts/"
-  }
-  maven {
-    url "https://www.stat.ubc.ca/~bouchard/maven/"
-  }
+  maven { url "file:///${System.properties['user.home']}/artifacts/" }
+  maven { url 'https://jitpack.io' }
+  maven { url "https://ubc-stat-ml.github.io/artifacts/" }
+  maven { url "https://www.stat.ubc.ca/~bouchard/maven/" }
 }
 
 dependencies {
-  compile group: 'com.google.guava', name: 'guava', version: '28.2-jre'
   testCompile group: 'junit', name: 'junit', version: '4.12'
-  compile group: 'junit', name: 'junit', version: '4.12'
-  compile group: 'ca.ubc.stat', name: 'binc', version: '2.0.2'
-  compile group: 'ca.ubc.stat', name: 'briefj', version: '2.4.21'
-  compile group: 'ca.ubc.stat', name: 'bayonet', version: '4.1.2'
-  compile group: 'ca.ubc.stat', name: 'inits', version: '2.12.1'
+  compile group: 'com.github.UBC-Stat-ML', name: 'inits', version: '3.3.4'
   compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
-  compile 'com.google.code.gson:gson:2.7'
   compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.9.2'
 }
 
@@ -136,5 +128,4 @@ run.enabled = false
 // Call this for each Main class you want to expose with an app script
 createScript(project, 'flows.Aggregate', 'aggregate')
 createScript(project, 'flows.Symlinks', 'nf-monitor')
-createScript(project, 'mcli.ComputeESS', 'ess')
 

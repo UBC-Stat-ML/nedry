@@ -1,5 +1,6 @@
 package flows;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +25,11 @@ import com.google.common.base.Splitter;
 import blang.inits.Arg;
 import blang.inits.DefaultValue;
 import blang.inits.experiments.Experiment;
+import blang.inits.experiments.tabwriters.factories.CSV;
+import blang.inits.experiments.tabwriters.factories.Spark;
 import blang.inits.parsing.CSVFile;
 import blang.inits.parsing.QualifiedName;
+import briefj.BriefIO;
 
 public class Aggregate extends Experiment
 {
@@ -32,21 +37,24 @@ public class Aggregate extends Experiment
       + "Syntax: comma separated list of (<key> [as <transformed-key>] )* from [optional] <tsv-file-in-each-exec>")
   public String keys;
   
-  @Arg(description = "Comma separated value (cvs) file in each exec containing the data to be aggregated.")
+  @Arg(description = "Comma separated value (cvs or csv.gz) file in each exec containing the data to be aggregated.")
   public String dataPathInEachExecFolder;
   
   @Arg(description = "Prefix of the directories, each containing stored command line arguments stored in tab separated values "
       + "as well data in csv format.") @DefaultValue("exec_")
   public String execFoldersPrefix                  = "exec_";
   
-  @Arg @DefaultValue("aggregated")
+  @Arg(description = "The output name, which could be either a folder with the provided name (if output is in Spark format as old default was), or a regular file based on the provided name with .csv or .csv.gz added automatically") 
+                     @DefaultValue("aggregated")
   public String outputFolderName = "aggregated";
-
+  
   @Override
   public void run()
   {
     Path root = results.getFileInResultFolder(outputFolderName).toPath();
     List<ArgumentsFile> argFiles = parseArgumentsFiles(keys);
+    
+    BufferedWriter writer = null;
     
     loop : for (File execFolder : getExecFolders())
     {
@@ -79,26 +87,47 @@ public class Aggregate extends Experiment
           }
         }
       }
-      Path leafDirectory = argumentsToDirectory(root, currentArguments, allTransformedKeys(argFiles));
-      // create symlink
-      try 
-      { 
-        File dataInEachExecFile = execFolder.toPath().resolve(dataPathInEachExecFolder).toFile();
-        if (!dataInEachExecFile.exists())
-        {
-          warnMissing(dataInEachExecFile.toPath()); 
-          continue loop;
+      File dataInEachExecFile = execFolder.toPath().resolve(dataPathInEachExecFolder).toFile();
+      Collection<String> allTransformedKeys = allTransformedKeys(argFiles);
+      if (experimentConfigs.tabularWriter instanceof CSV) {
+        LinkedHashMap<String, String> prefix = argumentsToPrefix(currentArguments, allTransformedKeys);
+        if (writer == null) {
+          CSV settings = (CSV) experimentConfigs.tabularWriter;
+          writer = results.getAutoClosedBufferedWriter(outputFolderName + ".csv" + (settings.compressed ? ".gz" : ""));
+          String header = BriefIO.readLines(dataInEachExecFile).first().get();
+          try {
+            writer.append(briefj.CSV.toCSV(prefix.keySet()) + "," + header + "\n");
+          } catch (IOException ioe) { throw new RuntimeException(ioe); }
         }
-        if (dataInEachExecFile.isDirectory())
-        {
-          for (File subDir : dataInEachExecFile.listFiles())
-            if (subDir.isDirectory())
-              Files.createSymbolicLink(leafDirectory.resolve(subDir.getName()), subDir.toPath());
-        }
-        else
-          Files.createSymbolicLink(leafDirectory.resolve("data.csv"), execFolder.toPath().resolve(dataPathInEachExecFolder)); 
-      } 
-      catch (IOException e) { throw new RuntimeException(e); }
+        String prefixStr = briefj.CSV.toCSV(prefix.values()) + ",";
+        for (String line : BriefIO.readLines(dataInEachExecFile).skip(1))
+          try {
+            writer.append(prefixStr + line + "\n");
+          } catch (IOException ioe) { throw new RuntimeException(ioe); }
+      } else if (experimentConfigs.tabularWriter instanceof Spark) {
+        Path leafDirectory = argumentsToDirectory(root, currentArguments, allTransformedKeys);
+        // create symlink
+        try 
+        { 
+          
+          if (!dataInEachExecFile.exists())
+          {
+            warnMissing(dataInEachExecFile.toPath()); 
+            continue loop;
+          }
+          if (dataInEachExecFile.isDirectory())
+          {
+            for (File subDir : dataInEachExecFile.listFiles())
+              if (subDir.isDirectory())
+                Files.createSymbolicLink(leafDirectory.resolve(subDir.getName()), subDir.toPath());
+          }
+          else 
+          {
+            Files.createSymbolicLink(leafDirectory.resolve("data.csv"), execFolder.toPath().resolve(dataPathInEachExecFolder)); 
+          }
+        } 
+        catch (IOException e) { throw new RuntimeException(e); }
+      }
     }
   }
 
@@ -132,6 +161,14 @@ public class Aggregate extends Experiment
       throw new RuntimeException("Duplicate argument combinations not allowed: " + currentArguments);
     current.toFile().mkdirs();
     return current;
+  }
+  
+  private static LinkedHashMap<String,String> argumentsToPrefix(Map<String, String> currentArguments, Collection<String> argumentsKeys)
+  {
+    LinkedHashMap<String,String> result = new LinkedHashMap<>();
+    for (String key : argumentsKeys)
+      result.put(key, currentArguments.get(key));
+    return result;
   }
   
   private Map<String, String> parseArguments(Path configFile, List<String> keys)
