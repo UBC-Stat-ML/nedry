@@ -89,7 +89,9 @@ public class Aggregate extends Experiment
       }
       File dataInEachExecFile = execFolder.toPath().resolve(dataPathInEachExecFolder).toFile();
       Collection<String> allTransformedKeys = allTransformedKeys(argFiles);
-      if (experimentConfigs.tabularWriter instanceof CSV) {
+      if (!dataInEachExecFile.exists()) 
+        System.err.println("File " + dataInEachExecFile + " does not exists, skipping this exec.");
+      else if (experimentConfigs.tabularWriter instanceof CSV) {
         LinkedHashMap<String, String> prefix = argumentsToPrefix(currentArguments, allTransformedKeys);
         if (writer == null) {
           CSV settings = (CSV) experimentConfigs.tabularWriter;
