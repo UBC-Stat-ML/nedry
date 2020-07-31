@@ -48,6 +48,8 @@ public class Aggregate extends Experiment
                      @DefaultValue("aggregated")
   public String outputFolderName = "aggregated";
   
+  public static String EXEC_FOLDER = "execFolder";
+  
   @Override
   public void run()
   {
@@ -87,8 +89,10 @@ public class Aggregate extends Experiment
           }
         }
       }
+      currentArguments.put(EXEC_FOLDER, execFolder.getName());
       File dataInEachExecFile = execFolder.toPath().resolve(dataPathInEachExecFolder).toFile();
       Collection<String> allTransformedKeys = allTransformedKeys(argFiles);
+      
       if (!dataInEachExecFile.exists()) 
         System.err.println("File " + dataInEachExecFile + " does not exists, skipping this exec.");
       else if (experimentConfigs.tabularWriter instanceof CSV) {
@@ -138,6 +142,7 @@ public class Aggregate extends Experiment
     LinkedHashSet<String> result = new LinkedHashSet<>();
     for (ArgumentsFile argFile : argFiles)
       result.addAll(argFile.transformedKeys);
+    result.add(EXEC_FOLDER);
     return result;
   }
 
