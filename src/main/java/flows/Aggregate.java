@@ -37,22 +37,25 @@ public class Aggregate extends Experiment
       + "Syntax: comma separated list of (<key> [as <transformed-key>] )* from [optional] <tsv-file-in-each-exec>")
   public String keys;
   
-  @Arg(description = "Comma separated value (cvs or csv.gz) file in each exec containing the data to be aggregated.")
-  public String dataPathInEachExecFolder;
+  @Arg(description = "Comma separated value (cvs or csv.gz) file(s) in each exec containing the data to be aggregated.")
+  public List<String> dataPathInEachExecFolder;
   
   @Arg(description = "Prefix of the directories, each containing stored command line arguments stored in tab separated values "
       + "as well data in csv format.") @DefaultValue("exec_")
   public String execFoldersPrefix                  = "exec_";
-  
-  @Arg(description = "The output name, which could be either a folder with the provided name (if output is in Spark format as old default was), or a regular file based on the provided name with .csv or .csv.gz added automatically") 
-                     @DefaultValue("aggregated")
-  public String outputFolderName = "aggregated";
   
   public static String EXEC_FOLDER = "execFolder";
   
   @Override
   public void run()
   {
+    for (String path : dataPathInEachExecFolder) 
+      run(path);
+  }
+  
+  public void run(String dataPathInEachExecFolder)
+  {
+    String outputFolderName = new File(dataPathInEachExecFolder).getName().replaceAll("[.]csv([.]gz)?", "");
     Path root = results.getFileInResultFolder(outputFolderName).toPath();
     List<ArgumentsFile> argFiles = parseArgumentsFiles(keys);
     

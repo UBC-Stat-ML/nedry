@@ -30,7 +30,7 @@ xtend {
 uploadArchives {
   repositories.mavenDeployer {
     repository(url: "file:///${System.properties['user.home']}/artifacts/")
-    pom.version = "2.0.0"
+    pom.version = "3.0.0"
     pom.artifactId = "nedry"
     pom.groupId = "com.github.UBC-Stat-ML"
   }
