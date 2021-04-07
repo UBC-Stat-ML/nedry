@@ -1,24 +1,13 @@
-apply plugin: 'java'
-apply plugin: 'maven'
-apply plugin: 'eclipse'
-apply plugin: "org.xtext.xtend"
-
-buildscript {
-  repositories {
-    mavenCentral()
-  }
+plugins {
+  id 'org.xtext.xtend' version '2.0.8'
+  id 'org.xtext.builder' version '2.0.8'
+  id 'java'
+  id 'eclipse'
+  id 'maven'
+  id 'application'
 }
 
-buildscript {
-  repositories {
-    maven {
-      url "https://plugins.gradle.org/m2/"
-    }
-  }
-  dependencies {
-    classpath "org.xtext:xtext-gradle-plugin:1.0.5"
-  }
-}
+
 
 xtend {
   generator{
@@ -94,9 +83,9 @@ apply plugin:'application'
 
 // Make sure maven archives don't get large
 configurations.archives.with {
-    artifacts.remove artifacts.find { it.archiveTask.is distZip }
-    artifacts.remove artifacts.find { it.archiveTask.is distTar }
-}  
+  artifacts.remove artifacts.find { it.file =~ 'tar' }
+  artifacts.remove artifacts.find { it.file =~ 'zip' }
+}
 
 // Creates scripts for entry points
 // Subproject must apply application plugin to be able to call this method.
