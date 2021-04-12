@@ -63,6 +63,7 @@ public class Aggregate extends Experiment
     
     loop : for (File execFolder : getExecFolders())
     {
+      System.out.println("Processing " + execFolder.getName());
       Map<String,String> currentArguments = new HashMap<>();
       for (ArgumentsFile argFile : argFiles)
       {
